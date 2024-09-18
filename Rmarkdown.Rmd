@@ -1,0 +1,534 @@
+---
+title: "2024 Fortune 1000 Companies"
+author: "Kened Kqiraj & Amir Shatrolli"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    code_folding: hide
+runtime: shiny
+---
+
+::: {#logo style="position: absolute; top: 1; right: 5px; padding: 80px;"}
+<img src="C:/Users/kened/OneDrive/Desktop/Master/R BOOTCAMP/6_Kqiraj_Shatrolli/Images/Kened_Kqiraj.png" alt="Logo" id="logo-img" style="max-width: 100px; height: auto;"/>
+
+**Kened Kqiraj**
+:::
+
+::: {style="position: absolute; top: 1; right: 120px; padding: 80px;"}
+<img src="C:/Users/kened/OneDrive/Desktop/Master/R BOOTCAMP/6_Kqiraj_Shatrolli/Images/amir_shatrolli.jpg" alt="Logo" style="max-width: 90px; height: auto;"/>
+
+**Amir Shatrolli**
+:::
+
+::: {style="position: absolute; top: 0; right: 10px; padding: 80px;"}
+<img src="C:/Users/kened/OneDrive/Desktop/Master/R BOOTCAMP/6_Kqiraj_Shatrolli/Images/logo.jpg" alt="Logo" style="max-width: 180px; height: auto;"/>
+:::
+
+# Table of Contents
+
+1.  [Introduction](#introduction)
+2.  [Data Preparation](#data-preparation)
+    -   [Loading the datasets and inspecting](#loading-the-datasets-and-inspecting)
+    -   [Summarizing](#summarizing)
+    -   [Cleaning and changing the column names accordingly](#cleaning-and-changing-the-column-names-accordingly)
+    -   [Merging the dataframes](#merging-the-dataframes)
+    -   [Visualizing the NA values](#visualizing-the-na-values)
+3.  [Data Exploration and Visualisation](#data-exploration-and-visualisation)
+    -   [Revenue vs. Rank](#revenue-vs-rank)
+    -   [Revenues vs. Profits](#revenues-vs-profits)
+    -   [Market Cap updated vs. Assets](#market-cap-updated-vs-assets)
+4.  [Data Analysis](#data-analysis)
+    -   [Correlation matrix](#correlation-matrix)
+    -   [Correlation matrix visualization](#correlation-matrix-visualization)
+5.  [Regression Analysis](#regression-analysis)
+    -   [Output of the Regression Analysis](#output-of-the-regression-analysis)
+6.  [Chapter of Choice (ShinyApp, Leaflet)](#chapter-of-choice-shinyapp-leaflet)
+    -   [The map of cities where companies are located](#the-map-of-cities-where-companies-are-located)
+7.  [Generative AI](#generative-ai)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r  warning=FALSE, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(stats)
+library(corrplot)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(leaflet)
+```
+
+# Introduction {#introduction}
+
+Welcome to our R Bootcamp project, where we dive into an in-depth **analysis** of the **2024 Fortune 1000 companies**. Our primary focus is on understanding the **Financial Performance** and Market Dynamics of these industry giants. We aim to answer a critical question:
+
+-   What factors most significantly differentiate top-performing companies from those lower on the list? To achieve this, we employ a multivariate analysis approach, exploring both financial and non-financial metrics. By analyzing key indicators such as revenue growth, profit margins, and return on assets, we aim to uncover patterns that correlate with higher rankings in the Fortune 1000 list.
+-   **Data Cleaning and Preparation**: We begin by cleaning the datasets to ensure accuracy and consistency in our analysis.
+-   **Data Integration**: Merging the datasets to create a comprehensive view of the companies.
+-   **Visualizations and Maps**: Visualization is a key component of our analysis. We create various visualizations, including maps, to explore and present the data grouped by different categories.
+-   **Chapter of Choice - Shiny Package**: As part of our exploration, we dedicate a chapter to the Shiny package in R.
+-   **Generative AI**: We also explore the integration of generative AI in our analysis.
+-   **Correlation Visualization and Linear Modeling**: In the final analytical phase, we focus on correlation visualization and linear modeling.
+-   **Conclusion**: We conclude by summarizing our findings, highlighting the key different indicators between top-performing companies and those lower on the list.
+
+# Data Preparation {#data-preparation}
+
+## Loading the datasets and inspecting {#loading-the-datasets-and-inspecting}
+
+The code begins by loading two datasets into one, data1 and data2. Initial Exploration: The `head()` function is used to view the first few rows. Column Identification: `colnames()` is used to list the column names, helping to understand the available variables in each dataset.
+
+```{r results="hide"}
+
+## Loading the data with the read.csv function
+data1 <- read.csv("C:/Users/kened/OneDrive/Desktop/Master/R BOOTCAMP/6_Kqiraj_Shatrolli/Data/fortune1000_2024DS1.csv")
+#head(data1)
+colnames(data1)
+data2 <- read.csv("C:/Users/kened/OneDrive/Desktop/Master/R BOOTCAMP/6_Kqiraj_Shatrolli/Data/data.csv")
+#head(data2)
+colnames(data2)
+
+```
+
+## Summarizing {#summarizing}
+
+After summarizing the data using `summary()` we see that some of the columns are characters and some are numerical values also we can see that there are some NA values. We will not drop the NA's at the begining for analysing purposes.
+
+```{r results="hide"}
+summary(data1)
+summary(data2)
+dim(data1) #This gave us the dimensions of data1
+dim(data2) #This gave us the dimensions of data2
+```
+
+## Cleaning and changing the column names accordingly.
+
+As we saw when we inspected the data, the two datasets have one id in common and that is the *Ticker* column, the only problem with the that column is in the first dataset it is upper case "Ticker" and the other it is lowecase *"ticker"*
+
+```{r results="hide"}
+names(data1)[names(data1) == "Ticker"] <- "ticker"
+data1$ticker <- tolower(data1$ticker)
+
+```
+
+## Merging the dataframes.
+
+While merging the dataframes we lost a lot of data from the data1, so as we discussed this with the Lecturers, they suggested us that we set *all.x=TRUE* meaning that all rows from the first data frame (data1) should be included in the final output, even if there is no matching row in the second data frame (data2).
+
+```{r}
+merged_df <- merge(data1,data2, all.x= TRUE, by="ticker")
+```
+
+### Visualizing the NA values {#visualizing-the-na-values}
+
+To visualize the *NA* values we used the naniar library and the vis_miss() function.
+
+```{r warning=FALSE, message=FALSE}
+library(naniar) #To use function vis_miss we call the library naniar
+vis_miss(data1) #Missing values of data1 vizualized
+vis_miss(data2) #Missing values of data2 vizualized
+```
+
+# Data exploration and Visualisation {#data-exploration-and-visualisation}
+
+### Revenue vs Rank {#revenue-vs-rank}
+
+```{r warning=FALSE, message=FALSE}
+library(ggplot2)
+library(plotly)
+# Creating a scatter plot Rank vs. Revenue interactive
+rkrev <- ggplot(merged_df, aes(x = Rank, y = Revenues_M)) +
+  geom_point(aes(color = Revenues_M, size = Profits_M), alpha = 0.7) +
+  scale_y_log10(labels = scales::dollar_format()) +
+  scale_color_gradient(low = "green", high = "purple") +
+  labs(
+    title = "Relationship Between Company Rank and Revenue",
+    subtitle = "2024 Fortune 1000 Companies",
+    x = "Company Rank",
+    y = "Revenue (Log Scale)",
+    color = "Revenue ($)",
+    size = "Profits ($)"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "right",
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray90")
+  )
+interactive_rkrev <- ggplotly(rkrev) # Making it interactive with plotly
+interactive_rkrev
+```
+
+Company Rank and Profits
+
+```{r warning=FALSE, message=FALSE}
+rankprofit <- ggplot(merged_df, aes(x = Rank, y = Profits_M)) +
+  geom_point(aes(color = Profits_M, size = Revenues_M), alpha = 0.7) +
+  scale_y_log10(labels = scales::dollar_format()) +
+  scale_color_gradient(low = "green", high = "purple") +
+  labs(
+    title = "Relationship Between Company Rank and Profits",
+    subtitle = "2024 Fortune 1000 Companies",
+    x = "Company Rank",
+    y = "Profits (Log Scale)",
+    color = "Profits ($)",
+    size = "Revenue ($)"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "right",
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray90")
+  )
+interactive_rankprofit <- ggplotly(rankprofit) # Making it interactive with plotly
+interactive_rankprofit
+```
+
+While exploring the data we came to an interesting graph showing that Sectors where a Female is CEO tend to have better ESG average score.
+
+```{r warning=FALSE, message=FALSE}
+# How does the mean total_score of ESG differ if the CEO is Female
+
+average_scores_sector <- merged_df %>% # Grouping by sector and FemaleCEO and creating a new variable
+  group_by(Sector, FemaleCEO) %>%
+  summarise(mean_total_score = mean(total_score, na.rm = TRUE)) %>%
+  ungroup()  # Ungroup to avoid potential ggplot2 errors
+
+# Plot x the sector and y the mean_total_score and filling with FemaleCEO yes=blue, no=orange
+femceo <- ggplot(average_scores_sector, aes(x = Sector, y = mean_total_score, fill = FemaleCEO)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(title = "Mean Total Score by Sector and Female CEO",
+       x = "Sector",
+       y = "Mean Total Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for better readability
+        plot.title = element_text(hjust = 0.5))  # Center the title
+interactive_femceo <- ggplotly(femceo)
+interactive_femceo
+```
+
+### Revenues vs Profits {#revenues-vs-profits}
+
+The data points indicate that there is a positive relationship between revenues and profits, however the relationship does not appear to be linear esspecially at higher revenue values. We used the logarithmic scale to better visualize the wide range of profit values.
+
+```{r warning=FALSE, message=FALSE}
+#Revenues vs Profit
+revprof <- ggplot(data = merged_df, aes(x = Revenues_M, y = Profits_M)) +
+  geom_point(color = "blue", alpha = 0.7) +
+  labs(title = "Revenues vs. Profits", x = "Revenues (in millions)", y = "Profits (in millions)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()+
+  scale_y_log10()
+interactive_revprof <- ggplotly(revprof)
+interactive_revprof
+```
+
+### Market Cap updated vs Assets {#market-cap-updated-vs-assets}
+
+The scatter plot shows a positive relationship between market cap and assets. Companies with higher assets tend to have a higher market cap. However, the relationship is not strictly linear.
+
+```{r warning=FALSE, message=FALSE}
+ggplot(data = merged_df, aes(x = MarketCap_Updated_M, y = Assets_M)) +
+  geom_point(color = "purple", alpha = 0.7) +
+  labs(title = "Market Cap Updated vs. Assets", x = "Market Cap (in millions)", y = "Assets (in millions)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()+
+  scale_y_log10()
+
+```
+
+# Data analysis {#data-analysis}
+
+## Correlation matrix {#correlation-matrix}
+
+We created a correlation matrix that highlights the key relationships between various financial metrics, which can guide further analysis of company performance.
+
+-   Companies with higher revenues, profits, and assets tend to have **better ranks** and **higher market capitalizations**.
+-   The number of employees is closely tied to revenue, **indicating** larger companies by revenue also have more employees.
+-   Changes in profits and rank are less tightly connected to the other metrics in this dataset.
+
+```{r, warning=FALSE, message=FALSE, results="hide"}
+
+## Correlation Analysis
+## We will first select the numeric columns that are relevant for correlation analysis.
+## These columns were chosen based on an initial inspection using summary statistics.
+
+numeric_columns <- merged_df %>%
+  select(Rank,                ## The rank of the company
+         Revenues_M,           ## Revenue in millions
+         RevenuePercentChange, ## Percentage change in revenue
+         Profits_M,            ## Profits in millions
+         ProfitsPercentChange, ## Percentage change in profits
+         MarketCap_Updated_M,  ## Updated market capitalization in millions
+         Assets_M,             ## Total assets in millions
+         Number_of_employees,  ## Number of employees
+         Change_in_Rank)       ## Change in rank of the company
+
+# numeric_cleaned <- na.omit(numeric_columns)
+
+#_______________________________________________________________________________________________
+#_______________________________________________________________________________________________
+
+## Calculate the correlation matrix for the selected numeric columns.
+## We used 'use = "pairwise.complete.obs"' ensures that correlations are calculated 
+## using all pairs of columns that have complete data (i.e., no NA values for the pair).
+
+cor_matrix <- cor(numeric_columns, use= "pairwise.complete.obs")
+
+## Print the correlation matrix to understand the strength and direction of the relationships between the variables.
+print(cor_matrix)
+
+
+```
+
+## Correlation matrix visualization {#correlation-matrix-visualization}
+
+-   **Rank and Revenues_M (-0.50)**: *A moderately negative correlation, suggesting that companies with higher revenues tend to have better ranks (lower rank numbers).*
+-   **Rank and Profits_M (-0.34)**: *A weak to moderate negative correlation, indicating that companies with higher profits are more likely to have better ranks (lower numbers).*
+-   **Revenues_M and Profits_M (0.66)**: *A strong positive correlation, showing that companies with higher revenues tend to have higher profits.*
+-   **Revenues_M and Number_of_employees (0.73)**: *A strong positive correlation, which indicates that companies with higher revenues tend to have more employee.*
+-   **Profits_M and MarketCap_Updated_M (0.81)**: *A very strong positive correlation, suggesting that companies with higher profits tend to have a larger market capitalization.*
+-   **MarketCap_Updated_M and Assets_M (0.88)**: *A very strong positive correlation, indicating that companies with larger assets typically have higher market capitalization.*
+
+```{r warning=FALSE, message=FALSE}
+# For melting the correlation matrix and making the plot
+
+#____________________________________________________________________________________________
+# Converting the correlation matrix into a long format (also known as tidy format)
+# This is necessary because ggplot2 requires the data to be in long format to plot
+# 'melt()' transforms the matrix into a data frame where each row is a variable pair and its correlation value
+
+cor_matrix_melted <- melt(cor_matrix)
+
+#____________________________________________________________________________________________
+# Creating the correlation plot using ggplot2
+
+cor_plot <- ggplot(cor_matrix_melted, aes(x = Var1, y = Var2, fill = value)) +
+  
+  # Creating a tile plot (heatmap) where each tile represents a correlation between two variables
+  geom_tile(color = "white") + 
+  
+  # Defining the color gradient for the heatmap
+  # Red represents negative correlations, blue represents positive correlations, 
+  # and white is neutral (0 correlation)
+  scale_fill_gradient2(low = "red", high = "blue", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name = "Correlation") + 
+  
+  # Applying a minimal theme to reduce visual clutter
+  theme_minimal() + 
+  
+  # Customizing the x-axis text (variable names) by rotating them for better readability
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 10, hjust = 1)) + 
+  
+  # Ensuring that the aspect ratio of the plot is fixed so the tiles are square
+  coord_fixed() + 
+  
+  # Adding the correlation values as text labels on each tile
+  geom_text(aes(label = round(value, 2)), color = "black", size = 4) + 
+  
+  # Adding a title to the plot and remove axis labels (since we are using variable names as axis labels)
+  labs(title = "Correlation Matrix of Company Performance Metrics",
+       x = "", y = "")
+
+# Printing the plot
+print(cor_plot)
+
+
+# Higher profitability and revenue are strongly linked with higher market capitalization,
+# which aligns with general financial insights that more profitable companies often have a larger market cap.
+# Rank is inversely correlated with revenue and profits, suggesting that better-ranked
+# companies (lower numbers) tend to generate more revenue and profits.
+# A high number of employees tends to correlate positively with revenue, indicating
+# that larger companies (in terms of workforce) tend to generate more revenue, possibly
+# reflecting larger operations or broader market reach.
+
+```
+
+-   Higher profitability and revenue are strongly linked with higher market capitalization, which aligns with general financial insights that more profitable companies **often** have a larger market cap.
+-   **Rank** is inversely correlated with revenue and profits, suggesting that better-ranked companies (lower numbers) tend to generate more revenue and profits.
+-   A high number of employees tends to **correlate positively** with revenue, indicating that larger companies (in terms of workforce) tend to generate more revenue, possibly reflecting larger operations or broader market reach.
+
+# Regression Analysis {#regression-analysis}
+
+We performed a regression analysis by first log-transforming several financial variables in the *merged_df* dataframe. We then fit a linear model with Rank as the dependent variable and the log-transformed variables as predictors. Finally, we summarized the model to display the results of the regression analysis.
+
+## Output of the Regression Analysis {#output-of-the-regression-analysis}
+
+Model Significance:
+
+-   **R-squared: 0.8738** - Approximately 87.4% of the variation in company rank is explained by the predictor variables in the model. This suggests a strong fit of the model to the data.
+
+-   **Adjusted R-squared: 0.8709** - After adjusting for the number of predictors, the model still explains about 87.1% of the variance, indicating the model’s explanatory power remains robust even after accounting for the complexity.
+
+**Conclusion** - *log_Revenues_M*, *log_MarketCap_Updated_M*, and *log_Number_of_employees* are statistically **significant** predictors of company rank. - **Revenues** have the strongest negative impact on rank, suggesting that companies with higher revenues are ranked better. - Market capitalization and the number of employees also have significant impacts on rank, though to a lesser extent. - Other predictors like log of Revenue Percent Change, Profits, and Assets do not show statistically significant relationships with rank in this model.
+
+```{r warning=FALSE, message=FALSE, collapse=TRUE}
+# Step 4: Regression Analysis
+# Fit a linear model with Rank as the dependent variable
+merged_df <- merged_df %>%
+  mutate(
+    log_Revenues_M = ifelse(Revenues_M > 0, log(Revenues_M), NA),
+    log_RevenuePercentChange = ifelse(RevenuePercentChange > 0, log(RevenuePercentChange), NA),
+    log_Profits_M = ifelse(Profits_M > 0, log(Profits_M), NA),
+    log_ProfitsPercentChange = ifelse(ProfitsPercentChange > 0, log(ProfitsPercentChange), NA),
+    log_MarketCap_Updated_M = ifelse(MarketCap_Updated_M > 0, log(MarketCap_Updated_M), NA),
+    log_Assets_M = ifelse(Assets_M > 0, log(Assets_M), NA),
+    log_Number_of_employees = ifelse(Number_of_employees > 0, log(Number_of_employees), NA)
+  )
+
+# Fit the linear model using the log-transformed variables
+model <- lm(Rank ~ log_Revenues_M + log_RevenuePercentChange + log_Profits_M + 
+              log_ProfitsPercentChange + log_MarketCap_Updated_M + log_Assets_M + 
+              log_Number_of_employees, data = merged_df)
+
+# Summary of the model
+summary(model)
+```
+
+# Chapter of choice (ShinyApp, Leaflet) {#chapter-of-choice-shinyapp-leaflet}
+
+```{r,  warning=FALSE, message=FALSE}
+# Load necessary libraries
+library(shiny)
+library(ggplot2)
+library(dplyr)
+
+# Assuming merged_df is already loaded
+# merged_df <- read.csv("path_to_your_dataset.csv")
+
+# Create the Shiny UI
+ui <- fluidPage(
+  
+  # App title
+  titlePanel("Impact of Log Revenues on Rank - 2024 Fortune 1000"),
+  
+  # Sidebar layout with input and output definitions
+  sidebarLayout(
+    
+    # Sidebar panel for inputs
+    sidebarPanel(
+      # Slider input for log_Revenues_M
+      sliderInput("logRevenueRange", 
+                  "Select Log Revenue Range:",
+                  min = round(min(merged_df$log_Revenues_M, na.rm = TRUE), 1),
+                  max = round(max(merged_df$log_Revenues_M, na.rm = TRUE), 1),
+                  value = c(min(merged_df$log_Revenues_M, na.rm = TRUE), 
+                            max(merged_df$log_Revenues_M, na.rm = TRUE)),
+                  step = 0.1)
+    ),
+    
+    # Main panel for displaying outputs
+    mainPanel(
+      # Output: Scatter plot
+      plotOutput("rankPlot")
+    )
+  )
+)
+
+# Create the Shiny Server
+server <- function(input, output) {
+  
+  # Reactive expression to filter the dataset based on slider input
+  filteredData <- reactive({
+    merged_df %>%
+      filter(log_Revenues_M >= input$logRevenueRange[1],
+             log_Revenues_M <= input$logRevenueRange[2])
+  })
+  
+  # Render the scatter plot
+  output$rankPlot <- renderPlot({
+    ggplot(filteredData(), aes(x = log_Revenues_M, y = Rank)) +
+      geom_point(aes(fill = Rank), alpha = 0.6) +  # Changed color to fill for better continuous data representation
+      scale_y_reverse() +  # Use reverse scale for Rank
+      scale_x_continuous(labels = scales::comma_format()) +
+      labs(
+        title = "Effect of Log Revenues on Company Rank",
+        x = "Log of Revenues (Million USD)",
+        y = "Company Rank",
+        fill = "Rank"  # Changed legend label
+      ) +
+      theme_minimal(base_size = 15) +
+      theme(
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        legend.position = "right"
+      )
+  })
+}
+
+# Run the app
+shinyApp(ui = ui, server = server)
+
+```
+
+## The map of cities where companies are located {#the-map-of-cities-where-companies-are-located}
+
+In this section, we utilize two key libraries: `dplyr` and `leaflet`. We start by creating a data frame `d.stations` that includes all the states found in the `HeadquartersState` column of our dataset. This data frame contains four vectors: `State`, `Capital`, `Longitude`, and `Latitude`. We then use the `leaflet` library to generate an interactive map. On this map, each state is represented by a marker located at its corresponding capital's coordinates. The labels for the markers are created using the `Label` column from `d.stations`, which combines the state and its capital city for clear identification. The `labelOptions` parameter is set to `noHide = FALSE`, meaning the labels will only be visible when the user hovers over the markers, keeping the map clean and less cluttered until interaction.
+
+```{r warning=FALSE, message=FALSE}
+
+
+# Data frame with US state capitals
+d.stations <- data.frame(
+  State = c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", 
+            "Connecticut", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", 
+            "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", 
+            "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", 
+            "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", 
+            "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", 
+            "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", 
+            "Vermont", "Virginia", "West Virginia", "Wisconsin", "Wyoming"),
+  
+  Capital = c("Montgomery", "Juneau", "Phoenix", "Little Rock", "Sacramento", "Denver", 
+              "Hartford", "Tallahassee", "Atlanta", "Honolulu", "Boise", "Springfield", 
+              "Indianapolis", "Des Moines", "Topeka", "Frankfort", "Baton Rouge", "Augusta", 
+              "Annapolis", "Boston", "Lansing", "Saint Paul", "Jackson", "Jefferson City", 
+              "Helena", "Lincoln", "Carson City", "Concord", "Trenton", "Santa Fe", 
+              "Raleigh", "Bismarck", "Columbus", "Oklahoma City", "Salem", "Harrisburg", 
+              "Providence", "Columbia", "Pierre", "Nashville", "Austin", "Salt Lake City", 
+              "Montpelier", "Richmond", "Charleston", "Madison", "Cheyenne"),
+  
+  Latitude = c(32.3792, 58.3019, 33.4484, 34.7465, 38.5816, 39.7392, 
+               41.7658, 30.4383, 33.7490, 21.3070, 43.6150, 39.7980, 
+               39.7684, 41.5868, 39.0489, 38.2009, 30.4515, 44.3106, 
+               38.9784, 42.3601, 42.7325, 44.9537, 32.2988, 38.5767, 
+               46.5884, 40.8136, 39.1638, 43.2073, 40.2171, 35.6870, 
+               35.7796, 46.8083, 39.9612, 35.4676, 44.9429, 40.2732, 
+               41.8236, 34.0007, 44.3683, 36.1627, 30.2672, 40.7608, 
+               44.2601, 37.5385, 38.3498, 43.0731, 41.1400),
+  
+  Longitude = c(-86.3077, -134.4197, -112.0740, -92.2896, -121.4944, -104.9903, 
+                -72.6734, -84.2807, -84.3880, -157.8583, -116.2023, -89.6502, 
+                -86.1581, -93.6250, -95.6770, -84.8733, -91.1871, -69.7795, 
+                -76.4922, -71.0589, -84.5555, -93.0933, -90.1848, -92.1735, 
+                -112.0188, -96.7026, -119.7674, -71.5376, -74.7429, -105.9388, 
+                -78.6382, -100.7837, -82.9988, -97.5164, -123.0351, -76.8844, 
+                -71.4128, -81.0348, -100.3500, -86.7816, -97.7431, -111.8910, 
+                -72.5763, -77.4336, -81.6326, -89.4008, -104.8202)
+)
+
+d.stations <- d.stations %>%
+  mutate(Label = paste(Capital, State, sep = ", "))
+
+# Creating the map with Leaflet
+leaflet(d.stations) %>%
+  addTiles() %>%
+  addMarkers(lng = ~Longitude, lat = ~Latitude,
+             label = d.stations$Label,
+             labelOptions = labelOptions(noHide = FALSE))
+
+```
+
+# Generative AI
+
+Throughout our project, we utilized **ChatGPT** as a learning tool to enhance our understanding and development process. It provided valuable **suggestions** for our code and was particularly helpful in writing our **Shiny app**, which was new to us. The advantages of using ChatGPT included **accelerating** our workflow and assisting in **error interpretation**. However, we faced some **limitations**; we had to learn effective **prompting techniques** to obtain the desired answers, and sometimes the outputs didn't perfectly align with our project. This required us to be diligent in verifying code and variable names to ensure accuracy.
