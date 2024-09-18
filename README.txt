@@ -31,4 +31,5 @@ ________________________________________________________________________________
 
 
 !!! Please run the R markdown file in order to experience all the plots as interactive, including shinyApp and leaflet map.
+!! Change the path accordingly
 ! The plots are converted with ggplotly.
